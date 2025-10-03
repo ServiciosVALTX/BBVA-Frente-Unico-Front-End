@@ -3,22 +3,25 @@ import '../styles/Chatbot.css';
 import logo from '../assets/logo.png';
 import { marked } from 'marked';
 
+// 🎯 1. DEFINICIÓN DE LA URL BASE DESDE LA VARIABLE DE ENTORNO
+// Usamos process.env.REACT_APP_API_BASE_URL (asumiendo Create React App)
+// Si usas Vite, sería: const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 const Chatbot = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isWelcomeScreen, setIsWelcomeScreen] = useState(true);
   const [isBotTyping, setIsBotTyping] = useState(false);
-  const [thinkingSteps, setThinkingSteps] = useState([]); // Nuevo estado para los pasos de pensamiento
-  const [showThinking, setShowThinking] = useState(false); // Estado para mostrar/ocultar el panel de pensamiento
-  // ✅ **NUEVO:** Estado para la imagen en vista previa
+  const [thinkingSteps, setThinkingSteps] = useState([]); 
+  const [showThinking, setShowThinking] = useState(false); 
   const [previewImage, setPreviewImage] = useState(null);
   const placeholderIndexRef = useRef(null);
   const threadIdRef = useRef(getOrCreateThreadId());
   
-  // ✅ **NUEVO:** Ref para acumular la respuesta del bot sin causar re-renders.
   const currentBotMessageRef = useRef('');
 
-  // Bienvenida... (sin cambios)
+  // Bienvenida...
   useEffect(() => {
     const welcomeMessage = "Hola!";
     const typingSpeed = 100;
@@ -38,13 +41,11 @@ const Chatbot = () => {
     type();
   }, []);
 
-  // ✅ **SIMPLIFICADO:** Configuración básica de `marked`
+  // Configuración básica de marked
   useEffect(() => {
     const renderer = new marked.Renderer();
-    // Podemos personalizar otros aspectos si es necesario, pero no el onclick
     marked.setOptions({ renderer });
     
-    // Limpiar al desmontar el componente
     return () => {
         marked.setOptions({ renderer: new marked.Renderer() });
     };
@@ -52,6 +53,13 @@ const Chatbot = () => {
 
 const handleSendMessage = async () => {
     if (!input.trim()) return;
+
+    // Comprobación de que la URL de la API está disponible antes de enviar
+    if (!API_BASE_URL) {
+        console.error("Error: API_BASE_URL no está definida. Verifica tu archivo .env.");
+        alert("Error de configuración: La dirección de la API no se encontró.");
+        return;
+    }
 
     const userInput = input; 
     setMessages(prev => [...prev, { text: userInput, sender: 'user' }]);
@@ -66,7 +74,8 @@ const handleSendMessage = async () => {
     });
 
     try {
-      const res = await fetch('http://localhost:8003/agent/invoke', {
+      // 🎯 2. USO DE LA VARIABLE DE ENTORNO EN EL FETCH
+      const res = await fetch(`${API_BASE_URL}/agent/invoke`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,10 +109,8 @@ const handleSendMessage = async () => {
               const token = tokenObj.token || '';
               currentBotMessageRef.current += token;
 
-              // ✅ **AQUÍ ESTÁ LA CORRECCIÓN**
               setMessages(prev => {
                 const newMessages = [...prev];
-                // Usamos la variable correcta: placeholderIndexRef
                 if (newMessages[placeholderIndexRef.current]) {
                   newMessages[placeholderIndexRef.current].text = currentBotMessageRef.current;
                 }
@@ -133,17 +140,15 @@ const handleSendMessage = async () => {
     }
   };
 
-  // Auto-scroll y añadir eventos a imágenes (modificado)
+  // Auto-scroll y añadir eventos a imágenes
   useEffect(() => {
     const chat = document.querySelector('.chatbot-messages');
     if (chat) chat.scrollTop = chat.scrollHeight;
     
-    // ✅ **NUEVO:** Añadir eventos de clic a las imágenes después de que se rendericen
     const messageTextElements = document.querySelectorAll('.message.bot .message-text');
     messageTextElements.forEach(el => {
         const images = el.querySelectorAll('img.chatbot-image');
         images.forEach(img => {
-            // Evitar añadir el listener varias veces
             if (!img.hasAttribute('data-listener-added')) {
                 img.addEventListener('click', () => setPreviewImage(img.src));
                 img.setAttribute('data-listener-added', 'true');
@@ -152,7 +157,6 @@ const handleSendMessage = async () => {
     });
   }, [messages, isBotTyping]);
   
-  // ... (resto del código sin cambios) ...
   function getOrCreateThreadId() { 
     let id = localStorage.getItem('thread_id'); 
     if (!id) { 
@@ -227,7 +231,7 @@ const handleSendMessage = async () => {
           <p>La IA puede cometer errores; siempre verifica la información crítica.</p>
         </div> 
       </div> 
-      {/* ✅ **NUEVO:** Modal de vista previa de imagen */}
+      {/* Modal de vista previa de imagen */}
       {previewImage && (
         <div className="image-preview-overlay" onClick={() => setPreviewImage(null)}>
           <span className="image-preview-close">&times;</span>
