@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../styles/Chatbot.css';
 import logo from '../assets/logo.png';
 import { marked } from 'marked';
+import { useSuggestions } from '../hooks/useSuggestions';
 
 // 🎯 1. DEFINICIÓN DE LA URL BASE DESDE LA VARIABLE DE ENTORNO
 // Usamos process.env.REACT_APP_API_BASE_URL (asumiendo Create React App)
@@ -18,8 +19,14 @@ const Chatbot = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const placeholderIndexRef = useRef(null);
   const threadIdRef = useRef(getOrCreateThreadId());
-  
+
   const currentBotMessageRef = useRef('');
+
+  // Estados para sugerencias
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const { suggestions, searchSuggestions, clearSuggestions } = useSuggestions(300, 3);
+  const suggestionsRef = useRef(null);
 
   // Bienvenida...
   useEffect(() => {
@@ -51,8 +58,9 @@ const Chatbot = () => {
     };
   }, []);
 
-const handleSendMessage = async () => {
-    if (!input.trim()) return;
+const handleSendMessage = async (messageText = null) => {
+    const textToSend = messageText || input;
+    if (!textToSend.trim()) return;
 
     // Comprobación de que la URL de la API está disponible antes de enviar
     if (!API_BASE_URL) {
@@ -61,10 +69,15 @@ const handleSendMessage = async () => {
         return;
     }
 
-    const userInput = input; 
+    const userInput = textToSend;
     setMessages(prev => [...prev, { text: userInput, sender: 'user' }]);
     setInput('');
     setIsBotTyping(true);
+
+    // Limpiar sugerencias
+    clearSuggestions();
+    setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
     
     currentBotMessageRef.current = '';
 
@@ -157,14 +170,108 @@ const handleSendMessage = async () => {
     });
   }, [messages, isBotTyping]);
   
-  function getOrCreateThreadId() { 
-    let id = localStorage.getItem('thread_id'); 
-    if (!id) { 
-      id = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2); 
-      localStorage.setItem('thread_id', id); 
-    } 
-    return id; 
-  } 
+  function getOrCreateThreadId() {
+    let id = localStorage.getItem('thread_id');
+    if (!id) {
+      id = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2);
+      localStorage.setItem('thread_id', id);
+    }
+    return id;
+  }
+
+  // Manejar cambio en el input
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setInput(value);
+
+    // Buscar sugerencias
+    if (value.trim().length >= 3) {
+      searchSuggestions(value);
+      setShowSuggestions(true);
+      setSelectedSuggestionIndex(-1);
+    } else {
+      setShowSuggestions(false);
+      clearSuggestions();
+    }
+  };
+
+  // Manejar selección de sugerencia
+  const handleSuggestionClick = (suggestion) => {
+    setInput(suggestion);
+    setShowSuggestions(false);
+    clearSuggestions();
+    setSelectedSuggestionIndex(-1);
+  };
+
+  // Manejar navegación con teclado
+  const handleKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) {
+      if (e.key === 'Enter') {
+        handleSendMessage();
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev =>
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+        break;
+
+      case 'Enter':
+        e.preventDefault();
+        if (selectedSuggestionIndex >= 0) {
+          const suggestion = suggestions[selectedSuggestionIndex];
+          setInput(suggestion);
+          setShowSuggestions(false);
+          clearSuggestions();
+          setSelectedSuggestionIndex(-1);
+          // Enviar mensaje inmediatamente
+          handleSendMessage(suggestion);
+        } else {
+          handleSendMessage();
+        }
+        break;
+
+      case 'Escape':
+        setShowSuggestions(false);
+        setSelectedSuggestionIndex(-1);
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  // Cerrar sugerencias al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+        setSelectedSuggestionIndex(-1);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Scroll automático en sugerencias cuando se navega con teclado
+  useEffect(() => {
+    if (selectedSuggestionIndex >= 0 && suggestionsRef.current) {
+      const selectedElement = suggestionsRef.current.children[selectedSuggestionIndex];
+      if (selectedElement) {
+        selectedElement.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [selectedSuggestionIndex]); 
 
   if (isWelcomeScreen) { 
     return ( 
@@ -216,16 +323,32 @@ const handleSendMessage = async () => {
               )}
             </div>
           )} 
-        </div> 
-        <div className="chatbot-input"> 
-          <input 
-            type="text" 
-            value={input} 
-            onChange={e => setInput(e.target.value)} 
-            placeholder="Escribe un mensaje..." 
-            onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
-          /> 
-          <button onClick={handleSendMessage}>Enviar</button> 
+        </div>
+        <div className="chatbot-input-container">
+          <div className="chatbot-input">
+            <input
+              type="text"
+              value={input}
+              onChange={handleInputChange}
+              placeholder="Escribe un mensaje..."
+              onKeyDown={handleKeyDown}
+            />
+            <button onClick={() => handleSendMessage()}>Enviar</button>
+          </div>
+          {/* Dropdown de sugerencias */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="suggestions-dropdown" ref={suggestionsRef}>
+              {suggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  className={`suggestion-item ${index === selectedSuggestionIndex ? 'selected' : ''}`}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  {suggestion}
+                </div>
+              ))}
+            </div>
+          )}
         </div> 
         <div className="disclaimer">
           <p>La IA puede cometer errores; siempre verifica la información crítica.</p>
