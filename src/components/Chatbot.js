@@ -3,6 +3,7 @@ import '../styles/Chatbot.css';
 import logo from '../assets/logo.png';
 import { marked } from 'marked';
 import { useSuggestions } from '../hooks/useSuggestions';
+import EmailTimeline from './EmailTimeline';
 
 // 🎯 1. DEFINICIÓN DE LA URL BASE DESDE LA VARIABLE DE ENTORNO
 // Usamos process.env.REACT_APP_API_BASE_URL (asumiendo Create React App)
@@ -27,6 +28,9 @@ const Chatbot = () => {
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const { suggestions, searchSuggestions, clearSuggestions } = useSuggestions(300, 3);
   const suggestionsRef = useRef(null);
+
+  // Estado para hilos de correos
+  const [emailThreads, setEmailThreads] = useState([]);
 
   // Bienvenida...
   useEffect(() => {
@@ -74,11 +78,12 @@ const handleSendMessage = async (messageText = null) => {
     setInput('');
     setIsBotTyping(true);
 
-    // Limpiar sugerencias
+    // Limpiar sugerencias y threads
     clearSuggestions();
     setShowSuggestions(false);
     setSelectedSuggestionIndex(-1);
-    
+    setEmailThreads([]);
+
     currentBotMessageRef.current = '';
 
     setMessages(prev => {
@@ -107,34 +112,47 @@ const handleSendMessage = async (messageText = null) => {
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
 
-        let start, end;
-        while ((start = buffer.indexOf('{')) !== -1 && (end = buffer.indexOf('}', start)) !== -1) {
-          const jsonStr = buffer.slice(start, end + 1);
-          buffer = buffer.slice(end + 1);
-          try {
-            const tokenObj = JSON.parse(jsonStr);
-            
-            // Verificar si es un paso de pensamiento
-            if (tokenObj.step) {
-              setThinkingSteps(prev => [...prev, tokenObj.step]);
-            } else {
-              // Si no es un paso, se trata como token de mensaje normal
-              const token = tokenObj.token || '';
-              currentBotMessageRef.current += token;
+        // Buscar líneas que empiecen con "data: "
+        let lines = buffer.split('\n');
+        for (let i = 0; i < lines.length - 1; i++) {
+          const line = lines[i].trim();
 
-              setMessages(prev => {
-                const newMessages = [...prev];
-                if (newMessages[placeholderIndexRef.current]) {
-                  newMessages[placeholderIndexRef.current].text = currentBotMessageRef.current;
-                }
-                return newMessages;
-              });
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.substring(6); // Remove "data: " prefix
+
+            try {
+              const tokenObj = JSON.parse(jsonStr);
+
+              // Verificar si es un paso de pensamiento
+              if (tokenObj.step) {
+                setThinkingSteps(prev => [...prev, tokenObj.step]);
+              } else if (tokenObj.email_threads) {
+                // Threads de correos completos del backend
+                console.log('Received email_threads:', tokenObj.email_threads);
+                setEmailThreads(tokenObj.email_threads);
+              } else {
+                // Si no es un paso, se trata como token de mensaje normal
+                const token = tokenObj.token || '';
+                currentBotMessageRef.current += token;
+
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  if (newMessages[placeholderIndexRef.current]) {
+                    newMessages[placeholderIndexRef.current].text = currentBotMessageRef.current;
+                  }
+                  return newMessages;
+                });
+              }
+
+            } catch (e) {
+              // Ignorar errores de parseo
+              console.debug('JSON parse error:', e);
             }
-
-          } catch {
-             // Ignorar errores de parseo
           }
         }
+
+        // Mantener la última línea incompleta en el buffer
+        buffer = lines[lines.length - 1];
       }
     } catch (err) {
       console.error(err);
@@ -292,15 +310,24 @@ const handleSendMessage = async (messageText = null) => {
         <div className="chatbot-messages"> 
           {messages.map((msg, i) => ( 
             <div key={i} className={`message ${msg.sender}`}> 
-              {msg.sender === 'bot' && <img src={logo} alt="Chatbot icon" />} 
-              <div 
-                className="message-text" 
-                dangerouslySetInnerHTML={{ 
-                  __html: msg.sender === 'bot' ? marked.parse(msg.text) : msg.text, 
-                }} 
-              /> 
-            </div> 
-          ))} 
+              {msg.sender === 'bot' && <img src={logo} alt="Chatbot icon" />}
+              <div
+                className="message-text"
+                dangerouslySetInnerHTML={{
+                  __html: msg.sender === 'bot' ? marked.parse(msg.text) : msg.text,
+                }}
+              />
+            </div>
+          ))}
+
+          {/* Mostrar hilos de correos si existen */}
+          {emailThreads.length > 0 && (
+            <div className="email-threads-section">
+              {emailThreads.map((thread, index) => (
+                <EmailTimeline key={index} threadInfo={thread} />
+              ))}
+            </div>
+          )} 
           {isBotTyping && !currentBotMessageRef.current && ( 
             <div className="message bot thinking-container">
               <div className="thinking-dots">
