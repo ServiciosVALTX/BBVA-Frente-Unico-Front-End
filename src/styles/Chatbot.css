@@ -424,3 +424,11 @@
 .suggestions-dropdown::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* ✅ Estilos para sección de hilos de email */
+.email-threads-section {
+  width: 100%;
+  max-width: 100%;
+  margin-top: 12px;
+  padding: 0 20px;
+}
