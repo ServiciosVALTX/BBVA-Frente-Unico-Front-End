@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/BBVA-Frente-Unico-Front-End/static/css/main.5e1c9cf4.css",
-    "main.js": "/BBVA-Frente-Unico-Front-End/static/js/main.d7af7b14.js",
+    "main.js": "/BBVA-Frente-Unico-Front-End/static/js/main.30619cf9.js",
     "static/js/453.9c8709a5.chunk.js": "/BBVA-Frente-Unico-Front-End/static/js/453.9c8709a5.chunk.js",
     "index.html": "/BBVA-Frente-Unico-Front-End/index.html",
     "main.5e1c9cf4.css.map": "/BBVA-Frente-Unico-Front-End/static/css/main.5e1c9cf4.css.map",
-    "main.d7af7b14.js.map": "/BBVA-Frente-Unico-Front-End/static/js/main.d7af7b14.js.map",
+    "main.30619cf9.js.map": "/BBVA-Frente-Unico-Front-End/static/js/main.30619cf9.js.map",
     "453.9c8709a5.chunk.js.map": "/BBVA-Frente-Unico-Front-End/static/js/453.9c8709a5.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.5e1c9cf4.css",
-    "static/js/main.d7af7b14.js"
+    "static/js/main.30619cf9.js"
   ]
 }
