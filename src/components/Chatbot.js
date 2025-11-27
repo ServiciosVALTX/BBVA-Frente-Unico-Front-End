@@ -18,6 +18,7 @@ const Chatbot = () => {
   const [thinkingSteps, setThinkingSteps] = useState([]); 
   const [showThinking, setShowThinking] = useState(false); 
   const [previewImage, setPreviewImage] = useState(null);
+  const [imageZoom, setImageZoom] = useState(1);
   const placeholderIndexRef = useRef(null);
   const threadIdRef = useRef(getOrCreateThreadId());
 
@@ -178,11 +179,15 @@ const handleSendMessage = async (messageText = null) => {
     
     const messageTextElements = document.querySelectorAll('.message.bot .message-text');
     messageTextElements.forEach(el => {
-        const images = el.querySelectorAll('img.chatbot-image');
+        // Seleccionar todas las imágenes dentro del mensaje del bot (sin filtrar por clase)
+        const images = el.querySelectorAll('img');
         images.forEach(img => {
-            if (!img.hasAttribute('data-listener-added')) {
+            // Excluir el logo del bot (que está fuera de .message-text)
+            if (!img.hasAttribute('data-listener-added') && !img.alt?.includes('Chatbot icon')) {
                 img.addEventListener('click', () => setPreviewImage(img.src));
                 img.setAttribute('data-listener-added', 'true');
+                // Agregar clase para cursor pointer (opcional, ya está en CSS)
+                img.classList.add('chatbot-image');
             }
         });
     });
@@ -381,11 +386,65 @@ const handleSendMessage = async (messageText = null) => {
           <p>La IA puede cometer errores; siempre verifica la información crítica.</p>
         </div> 
       </div> 
-      {/* Modal de vista previa de imagen */}
+      {/* Modal de vista previa de imagen con zoom */}
       {previewImage && (
-        <div className="image-preview-overlay" onClick={() => setPreviewImage(null)}>
-          <span className="image-preview-close">&times;</span>
-          <img className="image-preview-content" src={previewImage} alt="Vista previa" />
+        <div
+          className="image-preview-overlay"
+          onClick={(e) => {
+            // Solo cerrar si se hace click en el overlay, no en la imagen
+            if (e.target.className === 'image-preview-overlay') {
+              setPreviewImage(null);
+              setImageZoom(1);
+            }
+          }}
+          onWheel={(e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            setImageZoom(prev => Math.min(Math.max(0.5, prev + delta), 3));
+          }}
+        >
+          <div className="image-preview-controls">
+            <button
+              className="zoom-btn"
+              onClick={() => setImageZoom(prev => Math.min(prev + 0.2, 3))}
+              title="Acercar"
+            >
+              +
+            </button>
+            <span className="zoom-level">{Math.round(imageZoom * 100)}%</span>
+            <button
+              className="zoom-btn"
+              onClick={() => setImageZoom(prev => Math.max(prev - 0.2, 0.5))}
+              title="Alejar"
+            >
+              −
+            </button>
+            <button
+              className="zoom-btn reset-btn"
+              onClick={() => setImageZoom(1)}
+              title="Restablecer zoom"
+            >
+              ⟲
+            </button>
+            <span
+              className="image-preview-close"
+              onClick={() => {
+                setPreviewImage(null);
+                setImageZoom(1);
+              }}
+            >
+              &times;
+            </span>
+          </div>
+          <div className="image-preview-container">
+            <img
+              className="image-preview-content"
+              src={previewImage}
+              alt="Vista previa"
+              style={{ transform: `scale(${imageZoom})` }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         </div>
       )}
     </div> 
