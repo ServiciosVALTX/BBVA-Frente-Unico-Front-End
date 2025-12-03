@@ -6,9 +6,10 @@
 /**
  * Formatea el contenido de un correo para mejor visualización
  * @param {string} emailBody - Contenido del correo en texto plano
+ * @param {Object} imagesMapping - Mapeo de <Imagen N> a filename (opcional)
  * @returns {string} - HTML formateado
  */
-export function formatEmailContent(emailBody) {
+export function formatEmailContent(emailBody, imagesMapping = null) {
   if (!emailBody) return '';
 
   let formatted = emailBody;
@@ -36,6 +37,9 @@ export function formatEmailContent(emailBody) {
 
   // 8. Formatear texto en negrita (markdown style *)
   formatted = formatBoldText(formatted);
+
+  // 9. Convertir placeholders de imágenes <Imagen N> a imágenes reales
+  formatted = formatImagePlaceholders(formatted, imagesMapping);
 
   return formatted;
 }
@@ -210,6 +214,53 @@ function formatBoldText(text) {
 }
 
 /**
+ * Convierte placeholders de imágenes <Imagen N> a tags <img>
+ * @param {string} text - Texto con placeholders <Imagen N>
+ * @param {Object} imagesMapping - Mapeo de "<Imagen N>" a filename
+ * @returns {string} - Texto con imágenes renderizadas
+ */
+function formatImagePlaceholders(text, imagesMapping = null) {
+  // Obtener API_BASE_URL desde variable de entorno
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8003';
+
+  // Patrón para detectar <Imagen N> o <Imagen N>: descripción
+  // Captura: <Imagen 1> o <Imagen 1>: Panel mostrando error...
+  const imagePlaceholderPattern = /<Imagen\s+(\d+)>(?::\s*([^<\n]+))?/gi;
+
+  return text.replace(imagePlaceholderPattern, (match, imageNumber, description) => {
+    const placeholder = `<Imagen ${imageNumber}>`;
+    const alt = description || `Imagen ${imageNumber}`;
+
+    // Si tenemos el mapping y existe el filename para este placeholder
+    if (imagesMapping && imagesMapping[placeholder]) {
+      const filename = imagesMapping[placeholder];
+      const imageUrl = `${API_BASE_URL}/images/${encodeURIComponent(filename)}`;
+
+      return `
+        <div class="email-image-container">
+          <img src="${imageUrl}" alt="${alt}" class="email-embedded-image" />
+          ${description ? `<div class="image-caption">${description}</div>` : ''}
+        </div>
+      `;
+    }
+
+    // Fallback: Mostrar placeholder visual si no hay mapping
+    return `
+      <div class="email-image-placeholder">
+        <div class="image-icon">🖼️</div>
+        <div class="image-label">
+          <strong>Imagen ${imageNumber}</strong>
+          ${description ? `<br/><span class="image-description">${description}</span>` : ''}
+        </div>
+        <div class="image-note">
+          <small>(La imagen original está disponible en el hilo del correo)</small>
+        </div>
+      </div>
+    `;
+  });
+}
+
+/**
  * Limpia y sanitiza el contenido
  */
 export function sanitizeEmailContent(content) {
@@ -219,8 +270,8 @@ export function sanitizeEmailContent(content) {
   let sanitized = content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
 
   // Escapar otros tags HTML potencialmente peligrosos
-  // (excepto los que nosotros creamos: div, span, a, strong)
-  sanitized = sanitized.replace(/<(?!\/?(div|span|a|strong|br)\b)[^>]+>/gi, '');
+  // (excepto los que nosotros creamos: div, span, a, strong, br, img, small)
+  sanitized = sanitized.replace(/<(?!\/?(div|span|a|strong|br|img|small)\b)[^>]+>/gi, '');
 
   return sanitized;
 }

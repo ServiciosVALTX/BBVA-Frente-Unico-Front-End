@@ -134,7 +134,9 @@ const EmailTimeline = ({ threadInfo }) => {
                       <div
                         className="original-content"
                         dangerouslySetInnerHTML={{
-                          __html: sanitizeEmailContent(formatEmailContent(email.body_text || ''))
+                          __html: sanitizeEmailContent(
+                            formatEmailContent(email.body_text || '', threadInfo.images_mapping)
+                          )
                         }}
                       />
                     </div>

@@ -467,3 +467,110 @@
   max-width: 100%;
   padding: 0;
 }
+
+/* Image placeholders */
+.email-image-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--secondary-color);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  transition: all 0.2s ease;
+}
+
+.email-image-placeholder:hover {
+  background: #f0f0f0;
+  border-left-color: #0d8c6d;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.image-icon {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.image-label {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.image-label strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.image-description {
+  color: var(--text-secondary);
+  font-size: 12px;
+  display: block;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.image-note {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  font-style: italic;
+  max-width: 200px;
+  text-align: right;
+}
+
+/* Responsive adjustments for image placeholders */
+@media (max-width: 768px) {
+  .email-image-placeholder {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .image-note {
+    max-width: 100%;
+    text-align: left;
+  }
+}
+
+/* Real images */
+.email-image-container {
+  margin: 16px 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--background-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.email-embedded-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.image-caption {
+  padding: 12px;
+  background: var(--secondary-color);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Responsive adjustments for real images */
+@media (max-width: 768px) {
+  .email-image-container {
+    margin: 12px -16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
