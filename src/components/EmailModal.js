@@ -6,6 +6,30 @@ import { formatEmailContent, sanitizeEmailContent } from '../utils/emailFormatte
  * Modal para mostrar el contenido completo de un correo con imágenes
  */
 const EmailModal = ({ email, imagesMapping, onClose }) => {
+  // Cerrar con tecla Escape
+  React.useEffect(() => {
+    if (!email) return;
+
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    // Prevenir scroll del body cuando el modal está abierto
+    document.body.style.overflow = 'hidden';
+
+    // Debug: ver qué está recibiendo el modal
+    console.log('EmailModal - email:', email.subject);
+    console.log('EmailModal - imagesMapping:', imagesMapping);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [email, onClose, imagesMapping]);
+
   if (!email) return null;
 
   const formatDate = (dateStr) => {
@@ -37,24 +61,6 @@ const EmailModal = ({ email, imagesMapping, onClose }) => {
       onClose();
     }
   };
-
-  // Cerrar con tecla Escape
-  React.useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    // Prevenir scroll del body cuando el modal está abierto
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
-    };
-  }, [onClose]);
 
   return (
     <div className="email-modal-overlay" onClick={handleOverlayClick}>

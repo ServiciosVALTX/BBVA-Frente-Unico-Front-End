@@ -223,6 +223,10 @@ function formatImagePlaceholders(text, imagesMapping = null) {
   // Obtener API_BASE_URL desde variable de entorno
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8003';
 
+  // Debug
+  console.log('formatImagePlaceholders - imagesMapping:', imagesMapping);
+  console.log('formatImagePlaceholders - text preview:', text?.substring(0, 200));
+
   // Patrón para detectar <Imagen N> o <Imagen N>: descripción
   // Captura: <Imagen 1> o <Imagen 1>: Panel mostrando error...
   const imagePlaceholderPattern = /<Imagen\s+(\d+)>(?::\s*([^<\n]+))?/gi;
@@ -231,10 +235,15 @@ function formatImagePlaceholders(text, imagesMapping = null) {
     const placeholder = `<Imagen ${imageNumber}>`;
     const alt = description || `Imagen ${imageNumber}`;
 
+    console.log(`Encontrado placeholder: ${placeholder}`);
+    console.log(`Buscando en mapping:`, imagesMapping?.[placeholder]);
+
     // Si tenemos el mapping y existe el filename para este placeholder
     if (imagesMapping && imagesMapping[placeholder]) {
       const filename = imagesMapping[placeholder];
       const imageUrl = `${API_BASE_URL}/images/${encodeURIComponent(filename)}`;
+
+      console.log(`✅ Renderizando imagen: ${filename}`);
 
       return `
         <div class="email-image-container">
@@ -243,6 +252,8 @@ function formatImagePlaceholders(text, imagesMapping = null) {
         </div>
       `;
     }
+
+    console.log(`❌ Sin mapping para ${placeholder} - mostrando placeholder`);
 
     // Fallback: Mostrar placeholder visual si no hay mapping
     return `
