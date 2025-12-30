@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import '../styles/EmailTimeline.css';
 import { formatEmailContent, sanitizeEmailContent } from '../utils/emailFormatter';
+import EmailModal from './EmailModal';
 
 /**
  * Componente Timeline para mostrar hilos de correos expandibles
@@ -8,6 +9,7 @@ import { formatEmailContent, sanitizeEmailContent } from '../utils/emailFormatte
  */
 const EmailTimeline = ({ threadInfo }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedEmail, setSelectedEmail] = useState(null);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return 'Fecha desconocida';
@@ -127,25 +129,29 @@ const EmailTimeline = ({ threadInfo }) => {
                     <strong>Asunto:</strong> {email.subject}
                   </div>
 
-                  {/* Contenido del correo */}
-                  <details className="email-details">
-                    <summary>Ver contenido del correo</summary>
-                    <div className="email-content">
-                      <div
-                        className="original-content"
-                        dangerouslySetInnerHTML={{
-                          __html: sanitizeEmailContent(
-                            formatEmailContent(email.body_text || '', threadInfo.images_mapping)
-                          )
-                        }}
-                      />
-                    </div>
-                  </details>
+                  {/* Botón para abrir correo completo */}
+                  <div className="email-actions">
+                    <button
+                      className="open-email-btn"
+                      onClick={() => setSelectedEmail(email)}
+                    >
+                      📧 Abrir correo completo
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
+      )}
+
+      {/* Modal para correo completo */}
+      {selectedEmail && (
+        <EmailModal
+          email={selectedEmail}
+          imagesMapping={threadInfo.images_mapping}
+          onClose={() => setSelectedEmail(null)}
+        />
       )}
     </div>
   );

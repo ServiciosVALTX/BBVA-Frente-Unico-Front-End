@@ -16,8 +16,8 @@
 
 .chatbot {
   width: 100%;
-  max-width: 800px; /* Aumentado de 400px a 800px */
-  margin: 0 auto;
+  max-width: 700px; /* Reducido de 800px a 700px */
+  margin: 0;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   display: flex;
@@ -29,7 +29,17 @@
   background-color: var(--background-color);
 }
 
-.page-container, .chatbot-welcome {
+.page-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100vh;
+  padding: 20px;
+  gap: 20px;
+  position: relative;
+}
+
+.chatbot-welcome {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -525,4 +535,135 @@
   max-width: 100%;
   margin-top: 12px;
   padding: 0 20px;
+}
+
+/* ✅ Estilos para paneles laterales de diagramas de procesos */
+.process-diagrams-panel {
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  max-height: calc(100vh - 40px);
+  width: 350px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.process-diagrams-panel .panel-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-primary);
+  background-color: var(--secondary-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.process-diagrams-panel .diagrams-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.diagram-card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: var(--background-color);
+  box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.diagram-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-color);
+  border-color: var(--primary-color);
+}
+
+.diagram-card .diagram-thumbnail {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  background-color: #f9f9f9;
+}
+
+.diagram-card .diagram-info {
+  padding: 12px;
+}
+
+.diagram-card .diagram-description {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.diagram-card .diagram-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.keyword-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  background-color: rgba(16, 163, 127, 0.1);
+  color: var(--primary-color);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid rgba(16, 163, 127, 0.2);
+}
+
+.keyword-badge.more {
+  background-color: var(--secondary-color);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+/* Scrollbar para paneles de diagramas */
+.diagrams-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.diagrams-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.diagrams-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.diagrams-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Responsivo: Ocultar paneles en pantallas pequeñas */
+@media (max-width: 1400px) {
+  .process-diagrams-panel {
+    display: none;
+  }
+
+  .page-container {
+    padding: 0;
+  }
+
+  .chatbot {
+    max-width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    border: none;
+  }
 }

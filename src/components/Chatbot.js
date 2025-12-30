@@ -33,6 +33,9 @@ const Chatbot = () => {
   // Estado para hilos de correos
   const [emailThreads, setEmailThreads] = useState([]);
 
+  // Estado para diagramas de procesos
+  const [processDiagrams, setProcessDiagrams] = useState([]);
+
   // Bienvenida...
   useEffect(() => {
     const welcomeMessage = "Hola!";
@@ -79,11 +82,12 @@ const handleSendMessage = async (messageText = null) => {
     setInput('');
     setIsBotTyping(true);
 
-    // Limpiar sugerencias y threads
+    // Limpiar sugerencias, threads y diagramas
     clearSuggestions();
     setShowSuggestions(false);
     setSelectedSuggestionIndex(-1);
     setEmailThreads([]);
+    setProcessDiagrams([]);
 
     currentBotMessageRef.current = '';
 
@@ -131,6 +135,10 @@ const handleSendMessage = async (messageText = null) => {
                 // Threads de correos completos del backend
                 console.log('Received email_threads:', tokenObj.email_threads);
                 setEmailThreads(tokenObj.email_threads);
+              } else if (tokenObj.process_diagrams) {
+                // Diagramas de procesos detectados por keywords
+                console.log('Received process_diagrams:', tokenObj.process_diagrams);
+                setProcessDiagrams(tokenObj.process_diagrams);
               } else {
                 // Si no es un paso, se trata como token de mensaje normal
                 const token = tokenObj.token || '';
@@ -309,8 +317,50 @@ const handleSendMessage = async (messageText = null) => {
     ); 
   } 
 
-  return ( 
-    <div className="page-container"> 
+  // Balanceo automático de diagramas entre paneles (Opción A)
+  const getBalancedDiagrams = () => {
+    const total = processDiagrams.length;
+    const half = Math.ceil(total / 2);
+
+    return {
+      left: processDiagrams.slice(0, half),
+      right: processDiagrams.slice(half)
+    };
+  };
+
+  const { left: leftDiagrams, right: rightDiagrams } = getBalancedDiagrams();
+
+  return (
+    <div className="page-container">
+      {/* Panel izquierdo: Diagramas de procesos */}
+      {leftDiagrams.length > 0 && (
+        <div className="process-diagrams-panel left">
+          <div className="panel-header">Diagramas Relacionados</div>
+          <div className="diagrams-container">
+            {leftDiagrams.map((diagram, index) => (
+              <div key={index} className="diagram-card" onClick={() => setPreviewImage(`${API_BASE_URL}/images/procesos/${diagram.image}`)}>
+                <img
+                  src={`${API_BASE_URL}/images/procesos/${diagram.image}`}
+                  alt={diagram.description}
+                  className="diagram-thumbnail"
+                />
+                <div className="diagram-info">
+                  <div className="diagram-description">{diagram.description}</div>
+                  <div className="diagram-keywords">
+                    {diagram.matched_keywords.slice(0, 3).map((kw, i) => (
+                      <span key={i} className="keyword-badge">{kw}</span>
+                    ))}
+                    {diagram.matched_keywords.length > 3 && (
+                      <span className="keyword-badge more">+{diagram.matched_keywords.length - 3}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="chatbot"> 
         <div className="chatbot-messages"> 
           {messages.map((msg, i) => ( 
@@ -447,8 +497,37 @@ const handleSendMessage = async (messageText = null) => {
           </div>
         </div>
       )}
-    </div> 
-  ); 
+
+      {/* Panel derecho: Diagramas de procesos */}
+      {rightDiagrams.length > 0 && (
+        <div className="process-diagrams-panel right">
+          <div className="panel-header">Diagramas Relacionados</div>
+          <div className="diagrams-container">
+            {rightDiagrams.map((diagram, index) => (
+              <div key={index} className="diagram-card" onClick={() => setPreviewImage(`${API_BASE_URL}/images/procesos/${diagram.image}`)}>
+                <img
+                  src={`${API_BASE_URL}/images/procesos/${diagram.image}`}
+                  alt={diagram.description}
+                  className="diagram-thumbnail"
+                />
+                <div className="diagram-info">
+                  <div className="diagram-description">{diagram.description}</div>
+                  <div className="diagram-keywords">
+                    {diagram.matched_keywords.slice(0, 3).map((kw, i) => (
+                      <span key={i} className="keyword-badge">{kw}</span>
+                    ))}
+                    {diagram.matched_keywords.length > 3 && (
+                      <span className="keyword-badge more">+{diagram.matched_keywords.length - 3}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default Chatbot;
