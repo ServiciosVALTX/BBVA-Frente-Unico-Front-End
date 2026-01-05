@@ -1,36 +1,88 @@
 import React from 'react';
 import '../styles/EmailModal.css';
-import { formatEmailContent, sanitizeEmailContent } from '../utils/emailFormatter';
+import { formatEmailContent, sanitizeEmailContent, splitThreadIntoEmails } from '../utils/emailFormatter';
 
 /**
- * Modal para mostrar el contenido completo de un correo con imágenes
+ * Modal para mostrar el contenido completo de correos como slides navegables
  */
-const EmailModal = ({ email, imagesMapping, onClose }) => {
-  // Cerrar con tecla Escape
-  React.useEffect(() => {
-    if (!email) return;
+const EmailModal = ({ emails, initialEmailIndex = 0, imagesMapping, onClose }) => {
+  // Dividir el contenido del primer correo en correos individuales si contiene un thread
+  const [allEmails, setAllEmails] = React.useState([]);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
 
-    const handleEscape = (e) => {
+  React.useEffect(() => {
+    if (!emails || emails.length === 0) return;
+
+    // Si hay múltiples emails en el array, usarlos directamente
+    if (emails.length > 1) {
+      setAllEmails(emails);
+      setCurrentIndex(initialEmailIndex);
+      return;
+    }
+
+    // Si solo hay 1 email, intentar dividirlo en sub-correos basándose en el contenido
+    const firstEmail = emails[0];
+    const splitEmails = splitThreadIntoEmails(firstEmail.body_text || '');
+
+    if (splitEmails.length > 1) {
+      // Se encontraron múltiples correos en el thread
+      const parsedEmails = splitEmails.map((split, idx) => ({
+        message_id: `${firstEmail.message_id}_split_${idx}`,
+        subject: idx === 0 ? firstEmail.subject : `Re: ${firstEmail.subject}`,
+        sender: split.sender || (idx === 0 ? firstEmail.sender : 'Desconocido'),
+        recipients: firstEmail.recipients,
+        cc: firstEmail.cc,
+        date: firstEmail.date,
+        body_text: split.content,
+        source_file: firstEmail.source_file
+      }));
+
+      setAllEmails(parsedEmails);
+      setCurrentIndex(0);
+    } else {
+      // No se pudo dividir, usar el email original
+      setAllEmails(emails);
+      setCurrentIndex(initialEmailIndex);
+    }
+  }, [emails, initialEmailIndex]);
+
+  // Cerrar con tecla Escape y navegación con flechas
+  React.useEffect(() => {
+    if (!allEmails || allEmails.length === 0) return;
+
+    const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         onClose();
+      } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+        setCurrentIndex(currentIndex - 1);
+      } else if (e.key === 'ArrowRight' && currentIndex < allEmails.length - 1) {
+        setCurrentIndex(currentIndex + 1);
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('keydown', handleKeyDown);
     // Prevenir scroll del body cuando el modal está abierto
     document.body.style.overflow = 'hidden';
 
-    // Debug: ver qué está recibiendo el modal
-    console.log('EmailModal - email:', email.subject);
-    console.log('EmailModal - imagesMapping:', imagesMapping);
-
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [email, onClose, imagesMapping]);
+  }, [allEmails, currentIndex, onClose]);
 
-  if (!email) return null;
+  if (!allEmails || allEmails.length === 0) return null;
+
+  const currentEmail = allEmails[currentIndex];
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < allEmails.length - 1;
+
+  const goToPrevious = () => {
+    if (hasPrevious) setCurrentIndex(currentIndex - 1);
+  };
+
+  const goToNext = () => {
+    if (hasNext) setCurrentIndex(currentIndex + 1);
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return 'Fecha desconocida';
@@ -65,69 +117,121 @@ const EmailModal = ({ email, imagesMapping, onClose }) => {
   return (
     <div className="email-modal-overlay" onClick={handleOverlayClick}>
       <div className="email-modal-container">
-        {/* Header del modal */}
+        {/* Header del modal con navegación */}
         <div className="email-modal-header">
-          <h2 className="email-modal-title">Correo Completo</h2>
+          <div className="email-modal-header-content">
+            <h2 className="email-modal-title">Hilo de Correos</h2>
+            <div className="email-modal-counter">
+              {currentIndex + 1} / {allEmails.length}
+            </div>
+          </div>
           <button className="email-modal-close" onClick={onClose} aria-label="Cerrar">
             ✕
           </button>
         </div>
 
-        {/* Contenido del modal */}
+        {/* Contenido del modal con slides */}
         <div className="email-modal-content">
-          {/* Metadata del correo */}
+          {/* Botones de navegación */}
+          {hasPrevious && (
+            <button
+              className="email-nav-button prev"
+              onClick={goToPrevious}
+              aria-label="Correo anterior"
+            >
+              ‹
+            </button>
+          )}
+
+          {hasNext && (
+            <button
+              className="email-nav-button next"
+              onClick={goToNext}
+              aria-label="Siguiente correo"
+            >
+              ›
+            </button>
+          )}
+
+          {/* Metadata del correo actual */}
           <div className="email-modal-meta">
             <div className="email-modal-meta-row">
               <strong>Asunto:</strong>
-              <span>{email.subject}</span>
+              <span>{currentEmail.subject}</span>
             </div>
 
             <div className="email-modal-meta-row">
               <strong>De:</strong>
-              <span>{email.sender}</span>
+              <span>{currentEmail.sender}</span>
             </div>
 
-            {email.recipients && (
+            {currentEmail.recipients && (
               <div className="email-modal-meta-row">
                 <strong>Para:</strong>
-                <span>{email.recipients}</span>
+                <span>{currentEmail.recipients}</span>
               </div>
             )}
 
-            {email.cc && (
+            {currentEmail.cc && (
               <div className="email-modal-meta-row">
                 <strong>CC:</strong>
-                <span>{email.cc}</span>
+                <span>{currentEmail.cc}</span>
               </div>
             )}
 
             <div className="email-modal-meta-row">
               <strong>Fecha:</strong>
-              <span>{formatDate(email.date)}</span>
+              <span>{formatDate(currentEmail.date)}</span>
             </div>
           </div>
 
           {/* Separador */}
           <div className="email-modal-divider"></div>
 
-          {/* Body del correo con imágenes */}
+          {/* Body del correo actual con imágenes */}
           <div className="email-modal-body">
             <div
               className="email-modal-text"
               dangerouslySetInnerHTML={{
                 __html: sanitizeEmailContent(
-                  formatEmailContent(email.body_text || '', imagesMapping)
+                  formatEmailContent(currentEmail.body_text || '', imagesMapping)
                 )
               }}
             />
           </div>
         </div>
 
-        {/* Footer del modal */}
+        {/* Footer del modal con indicadores de navegación */}
         <div className="email-modal-footer">
-          <button className="email-modal-close-btn" onClick={onClose}>
-            Cerrar
-          </button>
+          {/* Indicadores de slides (dots) */}
+          {allEmails.length > 1 && (
+            <div className="email-slides-indicators">
+              {allEmails.map((_, index) => (
+                <button
+                  key={index}
+                  className={`slide-dot ${index === currentIndex ? 'active' : ''}`}
+                  onClick={() => setCurrentIndex(index)}
+                  aria-label={`Ir al correo ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="email-modal-footer-actions">
+            {hasPrevious && (
+              <button className="email-modal-nav-btn" onClick={goToPrevious}>
+                ← Anterior
+              </button>
+            )}
+            <button className="email-modal-close-btn" onClick={onClose}>
+              Cerrar
+            </button>
+            {hasNext && (
+              <button className="email-modal-nav-btn" onClick={goToNext}>
+                Siguiente →
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

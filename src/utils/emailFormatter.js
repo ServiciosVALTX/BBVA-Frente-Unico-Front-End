@@ -4,6 +4,88 @@
  */
 
 /**
+ * Divide el contenido de un thread en correos individuales
+ * Detecta patrones como "El X escribió:" y "---------- Forwarded message ---------"
+ * @param {string} threadContent - Contenido completo del thread
+ * @returns {Array} - Array de objetos con {content, metadata} para cada correo
+ */
+export function splitThreadIntoEmails(threadContent) {
+  if (!threadContent) return [];
+
+  // Patrones para detectar inicio de un nuevo correo en el thread
+  const emailSeparatorPatterns = [
+    // Patrón: "El mar, 1 jul 2025 a la(s) 2:11 p.m., NOMBRE (email@domain.com) escribió:"
+    /El\s+\w+,\s+\d+\s+\w+\s+\d{4}\s+a\s+la\(s\)\s+[^,]+,\s+([^(]+)\s*\(([^)]+)\)\s+escribió:/gi,
+    // Patrón: "---------- Forwarded message ---------"
+    /-{5,}\s*Forwarded message\s*-{5,}/gi,
+  ];
+
+  const emails = [];
+  let currentEmailContent = '';
+  let lastIndex = 0;
+
+  // Buscar todos los separadores en el texto
+  const matches = [];
+
+  emailSeparatorPatterns.forEach(pattern => {
+    const regex = new RegExp(pattern.source, pattern.flags);
+    let match;
+
+    while ((match = regex.exec(threadContent)) !== null) {
+      matches.push({
+        index: match.index,
+        match: match[0],
+        sender: match[1] ? match[1].trim() : null,
+        email: match[2] ? match[2].trim() : null
+      });
+    }
+  });
+
+  // Ordenar matches por índice
+  matches.sort((a, b) => a.index - b.index);
+
+  // Si no hay separadores, devolver el contenido completo como un solo correo
+  if (matches.length === 0) {
+    return [{
+      content: threadContent,
+      sender: null,
+      index: 0
+    }];
+  }
+
+  // Dividir el contenido basándose en los separadores encontrados
+  matches.forEach((match, idx) => {
+    // Contenido desde el último índice hasta este separador
+    if (idx === 0 && match.index > 0) {
+      // Primer correo (antes del primer separador)
+      emails.push({
+        content: threadContent.substring(0, match.index).trim(),
+        sender: null,
+        index: 0
+      });
+    }
+
+    // Determinar el final de este correo
+    const nextMatch = matches[idx + 1];
+    const endIndex = nextMatch ? nextMatch.index : threadContent.length;
+
+    // Extraer contenido de este correo (después del separador)
+    const emailContent = threadContent.substring(match.index + match.match.length, endIndex).trim();
+
+    if (emailContent) {
+      emails.push({
+        content: emailContent,
+        sender: match.sender,
+        email: match.email,
+        index: idx + 1
+      });
+    }
+  });
+
+  return emails;
+}
+
+/**
  * Formatea el contenido de un correo para mejor visualización
  * @param {string} emailBody - Contenido del correo en texto plano
  * @param {Object} imagesMapping - Mapeo de <Imagen N> a filename (opcional)

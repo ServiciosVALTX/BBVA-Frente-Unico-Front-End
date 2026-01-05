@@ -84,7 +84,7 @@ const EmailTimeline = ({ threadInfo }) => {
         </button>
       </div>
 
-      {/* Timeline expandible */}
+      {/* Contenido expandible - Metadata + botón para ver hilo completo */}
       {isExpanded && (
         <div className="timeline-content">
           <div className="timeline-header">
@@ -98,57 +98,50 @@ const EmailTimeline = ({ threadInfo }) => {
             </div>
           </div>
 
-          <div className="timeline-emails">
-            {threadInfo.emails.map((email, index) => (
-              <div key={email.message_id || index} className="timeline-email">
-                <div className="timeline-dot"></div>
-                {index < threadInfo.emails.length - 1 && <div className="timeline-line"></div>}
-
-                <div className="email-card">
-                  <div className="email-header">
-                    <span className="email-date">{formatDate(email.date)}</span>
-                  </div>
-
-                  <div className="email-sender">
-                    <strong>De:</strong> {email.sender}
-                  </div>
-
-                  {email.recipients && (
-                    <div className="email-recipients">
-                      <strong>Para:</strong> {email.recipients}
-                    </div>
-                  )}
-
-                  {email.cc && (
-                    <div className="email-cc">
-                      <strong>CC:</strong> {email.cc}
-                    </div>
-                  )}
-
-                  <div className="email-subject">
-                    <strong>Asunto:</strong> {email.subject}
-                  </div>
-
-                  {/* Botón para abrir correo completo */}
-                  <div className="email-actions">
-                    <button
-                      className="open-email-btn"
-                      onClick={() => setSelectedEmail(email)}
-                    >
-                      📧 Abrir correo completo
-                    </button>
-                  </div>
-                </div>
+          {/* Metadata del correo principal */}
+          {threadInfo.emails[0] && (
+            <div className="email-preview-metadata">
+              <div className="preview-metadata-row">
+                <strong>Asunto:</strong>
+                <span>{threadInfo.emails[0].subject}</span>
               </div>
-            ))}
+
+              <div className="preview-metadata-row">
+                <strong>De:</strong>
+                <span>{threadInfo.emails[0].sender}</span>
+              </div>
+
+              {threadInfo.emails[0].recipients && (
+                <div className="preview-metadata-row">
+                  <strong>Para:</strong>
+                  <span>{threadInfo.emails[0].recipients}</span>
+                </div>
+              )}
+
+              <div className="preview-metadata-row">
+                <strong>Fecha:</strong>
+                <span>{formatDate(threadInfo.emails[0].date)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Botón para ver el hilo completo con slides */}
+          <div className="view-thread-button-container">
+            <button
+              className="view-thread-btn"
+              onClick={() => setSelectedEmail(threadInfo.emails[0])}
+            >
+              📧 Ver hilo completo
+            </button>
           </div>
         </div>
       )}
 
-      {/* Modal para correo completo */}
+      {/* Modal para correo completo - ahora recibe todo el thread */}
       {selectedEmail && (
         <EmailModal
-          email={selectedEmail}
+          emails={threadInfo.emails}
+          initialEmailIndex={threadInfo.emails.findIndex(e => e.message_id === selectedEmail.message_id)}
           imagesMapping={threadInfo.images_mapping}
           onClose={() => setSelectedEmail(null)}
         />

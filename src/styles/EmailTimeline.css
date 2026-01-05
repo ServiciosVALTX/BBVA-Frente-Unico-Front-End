@@ -608,3 +608,430 @@
 .open-email-btn:active {
   transform: translateY(0);
 }
+
+/* ========================================
+   CARRUSEL HORIZONTAL DE CORREOS
+   ======================================== */
+
+.email-carousel-container {
+  padding: 16px;
+  background: var(--background-color);
+  overflow: hidden;
+}
+
+.email-carousel {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 4px 16px 4px;
+  scroll-behavior: smooth;
+
+  /* Scrollbar personalizado */
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--secondary-color);
+}
+
+.email-carousel::-webkit-scrollbar {
+  height: 8px;
+}
+
+.email-carousel::-webkit-scrollbar-track {
+  background: var(--secondary-color);
+  border-radius: 4px;
+}
+
+.email-carousel::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+.email-carousel::-webkit-scrollbar-thumb:hover {
+  background: #0d8c6d;
+}
+
+/* Tarjeta de correo en el carrusel */
+.email-carousel-card {
+  min-width: 320px;
+  max-width: 320px;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.email-carousel-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(16, 163, 127, 0.15);
+  border-color: var(--primary-color);
+}
+
+/* Header de la tarjeta */
+.carousel-card-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, #0d8c6d 100%);
+  color: white;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.carousel-card-number {
+  font-weight: 700;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.carousel-card-date {
+  font-size: 12px;
+  opacity: 0.95;
+}
+
+/* Contenido de la tarjeta */
+.carousel-card-content {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: 220px;
+}
+
+.carousel-card-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.carousel-card-field strong {
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.carousel-card-field span {
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.carousel-card-field.subject {
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.carousel-card-field.subject span {
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+/* Footer de la tarjeta */
+.carousel-card-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+  background: var(--secondary-color);
+}
+
+.carousel-card-footer .open-email-btn {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Responsive: En móviles, mostrar una tarjeta completa */
+@media (max-width: 768px) {
+  .email-carousel-card {
+    min-width: calc(100vw - 64px);
+    max-width: calc(100vw - 64px);
+  }
+}
+
+/* ========================================
+   ESTILOS PARA CORREO PRINCIPAL EXPANDIDO
+   ======================================== */
+
+/* Metadata de preview del correo (antes del botón) */
+.email-preview-metadata {
+  background: var(--secondary-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.preview-metadata-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  align-items: flex-start;
+}
+
+.preview-metadata-row:last-child {
+  margin-bottom: 0;
+}
+
+.preview-metadata-row strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+.preview-metadata-row span {
+  color: var(--text-secondary);
+  word-break: break-word;
+  flex: 1;
+}
+
+/* Contenedor principal del correo */
+.main-email-content {
+  background: var(--background-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Metadata del correo principal */
+.email-metadata {
+  background: var(--secondary-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.metadata-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  align-items: flex-start;
+}
+
+.metadata-row:last-child {
+  margin-bottom: 0;
+}
+
+.metadata-row strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.metadata-row span {
+  color: var(--text-secondary);
+  word-break: break-word;
+  flex: 1;
+}
+
+/* Cuerpo del correo principal */
+.email-body {
+  padding: 16px;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.email-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Scrollbar para el cuerpo del correo */
+.email-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.email-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.email-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.email-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Estilos para contenido formateado del email */
+.email-text .email-quote {
+  border-left: 3px solid var(--primary-color);
+  padding-left: 12px;
+  margin: 12px 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.email-text .email-signature {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.email-text .email-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.email-text .email-link:hover {
+  text-decoration: underline;
+}
+
+.email-text .email-address {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+/* Imágenes embebidas en el correo */
+.email-text .email-image-container {
+  margin: 20px 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.email-text .email-embedded-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #fafafa;
+}
+
+.email-text .image-caption {
+  padding: 12px;
+  background: var(--secondary-color);
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+/* Placeholder para imágenes sin mapping */
+.email-text .email-image-placeholder {
+  margin: 20px 0;
+  padding: 20px;
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  background: var(--secondary-color);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.email-text .image-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.email-text .image-label {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.email-text .image-description {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.email-text .image-note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #999999;
+}
+
+/* Botón para ver el hilo completo */
+.view-thread-button-container {
+  display: flex;
+  justify-content: center;
+  padding-top: 16px;
+}
+
+.view-thread-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(16, 163, 127, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.view-thread-btn:hover {
+  background: #0d8c6d;
+  box-shadow: 0 4px 12px rgba(16, 163, 127, 0.3);
+  transform: translateY(-1px);
+}
+
+.view-thread-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive para correo principal */
+@media (max-width: 768px) {
+  .email-preview-metadata {
+    padding: 12px;
+  }
+
+  .preview-metadata-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .preview-metadata-row strong {
+    min-width: auto;
+  }
+
+  .email-metadata {
+    padding: 12px;
+  }
+
+  .metadata-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .metadata-row strong {
+    min-width: auto;
+  }
+
+  .email-body {
+    padding: 12px;
+    max-height: 400px;
+  }
+
+  .view-thread-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
