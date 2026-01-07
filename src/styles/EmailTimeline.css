@@ -1035,3 +1035,47 @@
     justify-content: center;
   }
 }
+
+/* ========================================
+   BADGE PARA CORREOS CITADOS POR EL AGENTE
+   ======================================== */
+
+.cited-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 14px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+.cited-badge-modal {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  color: #333;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 8px rgba(255, 215, 0, 0.6);
+  }
+}

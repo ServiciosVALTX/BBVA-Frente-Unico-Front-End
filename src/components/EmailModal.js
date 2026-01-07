@@ -1,61 +1,31 @@
 import React from 'react';
 import '../styles/EmailModal.css';
-import { formatEmailContent, sanitizeEmailContent, splitThreadIntoEmails } from '../utils/emailFormatter';
+import { formatEmailContent, sanitizeEmailContent } from '../utils/emailFormatter';
 
 /**
  * Modal para mostrar el contenido completo de correos como slides navegables
+ *
+ * Arquitectura:
+ * - 1 archivo .eml = 1 slide (incluso si contiene thread anidado con Re:/Fwd:)
+ * - Múltiples archivos .eml relacionados = múltiples slides navegables
  */
 const EmailModal = ({ emails, initialEmailIndex = 0, imagesMapping, onClose }) => {
-  // Dividir el contenido del primer correo en correos individuales si contiene un thread
-  const [allEmails, setAllEmails] = React.useState([]);
-  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [currentIndex, setCurrentIndex] = React.useState(initialEmailIndex);
 
   React.useEffect(() => {
-    if (!emails || emails.length === 0) return;
-
-    // Si hay múltiples emails en el array, usarlos directamente
-    if (emails.length > 1) {
-      setAllEmails(emails);
-      setCurrentIndex(initialEmailIndex);
-      return;
-    }
-
-    // Si solo hay 1 email, intentar dividirlo en sub-correos basándose en el contenido
-    const firstEmail = emails[0];
-    const splitEmails = splitThreadIntoEmails(firstEmail.body_text || '');
-
-    if (splitEmails.length > 1) {
-      // Se encontraron múltiples correos en el thread
-      const parsedEmails = splitEmails.map((split, idx) => ({
-        message_id: `${firstEmail.message_id}_split_${idx}`,
-        subject: idx === 0 ? firstEmail.subject : `Re: ${firstEmail.subject}`,
-        sender: split.sender || (idx === 0 ? firstEmail.sender : 'Desconocido'),
-        recipients: firstEmail.recipients,
-        cc: firstEmail.cc,
-        date: firstEmail.date,
-        body_text: split.content,
-        source_file: firstEmail.source_file
-      }));
-
-      setAllEmails(parsedEmails);
-      setCurrentIndex(0);
-    } else {
-      // No se pudo dividir, usar el email original
-      setAllEmails(emails);
-      setCurrentIndex(initialEmailIndex);
-    }
-  }, [emails, initialEmailIndex]);
+    setCurrentIndex(initialEmailIndex);
+  }, [initialEmailIndex]);
 
   // Cerrar con tecla Escape y navegación con flechas
   React.useEffect(() => {
-    if (!allEmails || allEmails.length === 0) return;
+    if (!emails || emails.length === 0) return;
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         onClose();
       } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
         setCurrentIndex(currentIndex - 1);
-      } else if (e.key === 'ArrowRight' && currentIndex < allEmails.length - 1) {
+      } else if (e.key === 'ArrowRight' && currentIndex < emails.length - 1) {
         setCurrentIndex(currentIndex + 1);
       }
     };
@@ -68,13 +38,41 @@ const EmailModal = ({ emails, initialEmailIndex = 0, imagesMapping, onClose }) =
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [allEmails, currentIndex, onClose]);
+  }, [emails, currentIndex, onClose]);
 
-  if (!allEmails || allEmails.length === 0) return null;
+  // Event listener para botones de toggle de descripciones VL
+  React.useEffect(() => {
+    const handleToggleClick = (e) => {
+      const button = e.target.closest('.toggle-description-btn');
+      if (!button) return;
 
-  const currentEmail = allEmails[currentIndex];
+      const targetId = button.getAttribute('data-target');
+      const targetDiv = document.getElementById(targetId);
+
+      if (targetDiv) {
+        button.classList.toggle('active');
+        targetDiv.classList.toggle('visible');
+      }
+    };
+
+    // Agregar listener al contenedor del modal
+    const modalBody = document.querySelector('.email-modal-body');
+    if (modalBody) {
+      modalBody.addEventListener('click', handleToggleClick);
+    }
+
+    return () => {
+      if (modalBody) {
+        modalBody.removeEventListener('click', handleToggleClick);
+      }
+    };
+  }, [currentIndex]); // Re-ejecutar cuando cambie el slide
+
+  if (!emails || emails.length === 0) return null;
+
+  const currentEmail = emails[currentIndex];
   const hasPrevious = currentIndex > 0;
-  const hasNext = currentIndex < allEmails.length - 1;
+  const hasNext = currentIndex < emails.length - 1;
 
   const goToPrevious = () => {
     if (hasPrevious) setCurrentIndex(currentIndex - 1);
@@ -122,7 +120,7 @@ const EmailModal = ({ emails, initialEmailIndex = 0, imagesMapping, onClose }) =
           <div className="email-modal-header-content">
             <h2 className="email-modal-title">Hilo de Correos</h2>
             <div className="email-modal-counter">
-              {currentIndex + 1} / {allEmails.length}
+              {currentIndex + 1} / {emails.length}
             </div>
           </div>
           <button className="email-modal-close" onClick={onClose} aria-label="Cerrar">
@@ -155,6 +153,16 @@ const EmailModal = ({ emails, initialEmailIndex = 0, imagesMapping, onClose }) =
 
           {/* Metadata del correo actual */}
           <div className="email-modal-meta">
+            <div className="email-modal-meta-row">
+              <strong>Archivo:</strong>
+              <span>
+                {currentEmail.source_file}
+                {currentEmail.cited_by_agent && (
+                  <span className="cited-badge-modal" title="Citado por el agente"> ⭐ Citado</span>
+                )}
+              </span>
+            </div>
+
             <div className="email-modal-meta-row">
               <strong>Asunto:</strong>
               <span>{currentEmail.subject}</span>
@@ -204,9 +212,9 @@ const EmailModal = ({ emails, initialEmailIndex = 0, imagesMapping, onClose }) =
         {/* Footer del modal con indicadores de navegación */}
         <div className="email-modal-footer">
           {/* Indicadores de slides (dots) */}
-          {allEmails.length > 1 && (
+          {emails.length > 1 && (
             <div className="email-slides-indicators">
-              {allEmails.map((_, index) => (
+              {emails.map((_, index) => (
                 <button
                   key={index}
                   className={`slide-dot ${index === currentIndex ? 'active' : ''}`}

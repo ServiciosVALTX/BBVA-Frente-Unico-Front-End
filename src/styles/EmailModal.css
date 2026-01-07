@@ -425,3 +425,132 @@
     justify-content: center;
   }
 }
+
+/* ========================================
+   Estilos para descripciones VL colapsables
+   ======================================== */
+
+/* Wrapper de la descripción */
+.image-description-wrapper {
+  margin-top: 12px;
+  width: 100%;
+}
+
+/* Botón para mostrar/ocultar descripción */
+.toggle-description-btn {
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2);
+  width: 100%;
+  justify-content: center;
+}
+
+.toggle-description-btn:hover {
+  background: linear-gradient(135deg, #357abd 0%, #2a5f8f 100%);
+  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+  transform: translateY(-1px);
+}
+
+.toggle-description-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2);
+}
+
+/* Icono del botón (flecha) */
+.toggle-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 12px;
+}
+
+.toggle-description-btn.active .toggle-icon {
+  transform: rotate(180deg);
+}
+
+/* Cambiar texto del botón cuando está activo */
+.toggle-description-btn.active::after {
+  content: ' (ocultar)';
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+/* Contenedor de la descripción colapsable */
+.image-description-collapsible {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease;
+  opacity: 0;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 8px;
+  padding: 0 16px;
+  color: #495057;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Cuando está visible */
+.image-description-collapsible.visible {
+  max-height: 1000px; /* Suficiente para descripciones largas */
+  opacity: 1;
+  padding: 16px;
+  border: 1px solid #e3e6ea;
+}
+
+/* Estilos para el contenido de la descripción */
+.image-description-collapsible p {
+  margin: 8px 0;
+}
+
+.image-description-collapsible ul,
+.image-description-collapsible ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.image-description-collapsible li {
+  margin: 4px 0;
+}
+
+/* Ajustes para el contenedor de imagen con descripción */
+.email-image-container {
+  margin: 16px 0;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e3e6ea;
+  border-radius: 12px;
+}
+
+.email-image-placeholder {
+  margin: 16px 0;
+  padding: 16px;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 12px;
+}
+
+/* Responsive para móviles */
+@media (max-width: 600px) {
+  .toggle-description-btn {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  .image-description-collapsible {
+    font-size: 13px;
+  }
+
+  .image-description-collapsible.visible {
+    padding: 12px;
+  }
+}

@@ -66,8 +66,10 @@ const EmailTimeline = ({ threadInfo }) => {
   const { first: firstDate, last: lastDate } = getFirstAndLastDate();
   const participants = getParticipants();
 
-  // Obtener el subject del primer correo
-  const mainSubject = threadInfo.emails[0]?.subject || 'Hilo de correos';
+  // Obtener el source_file del primer correo citado, o el primero del thread
+  const citedEmail = threadInfo.emails.find(e => e.cited_by_agent) || threadInfo.emails[0];
+  const mainTitle = citedEmail?.source_file || 'Hilo de correos';
+  const isCited = citedEmail?.cited_by_agent || false;
 
   return (
     <div className="email-timeline-container">
@@ -77,7 +79,10 @@ const EmailTimeline = ({ threadInfo }) => {
           <span className="thread-badge">
             📧 Hilo con {threadInfo.email_count} correo{threadInfo.email_count > 1 ? 's' : ''}
           </span>
-          <span className="thread-subject">{mainSubject}</span>
+          <span className="thread-subject">
+            {mainTitle}
+            {isCited && <span className="cited-badge" title="Citado por el agente"> ⭐</span>}
+          </span>
         </div>
         <button className="thread-toggle-btn">
           <span className={`arrow ${isExpanded ? 'expanded' : ''}`}>▼</span>

@@ -307,50 +307,198 @@ function formatImagePlaceholders(text, imagesMapping = null) {
 
   // Debug
   console.log('formatImagePlaceholders - imagesMapping:', imagesMapping);
-  console.log('formatImagePlaceholders - text preview:', text?.substring(0, 200));
 
-  // Patrón para detectar <Imagen N> o <Imagen N>: descripción
-  // Captura: <Imagen 1> o <Imagen 1>: Panel mostrando error...
-  const imagePlaceholderPattern = /<Imagen\s+(\d+)>(?::\s*([^<\n]+))?/gi;
+  // Contador único para IDs
+  let uniqueCounter = Math.floor(Math.random() * 100000);
 
-  return text.replace(imagePlaceholderPattern, (match, imageNumber, description) => {
+  // ESTRATEGIA: Buscar todos los <Imagen N>: y extraer descripciones manualmente
+  // Esto es más robusto que regex complejos
+
+  let processedText = text;
+  const imageMatches = [];
+
+  // Encontrar todas las posiciones de <Imagen N>:
+  // Nota: Puede incluir caracteres extra como ">>> <Imagen 4>:"
+  const regex = /(?:>>>)?\s*<Imagen\s+(\d+)>:/gi;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    imageMatches.push({
+      number: match[1],
+      start: match.index,
+      fullMatch: match[0]
+    });
+  }
+
+  // QUICK FIX: Detectar y eliminar duplicados
+  // Si hay múltiples bloques de la misma imagen con descripciones similares,
+  // mantener solo la primera ocurrencia
+  const uniqueImages = new Map();
+  const imagesToKeep = [];
+
+  for (const img of imageMatches) {
+    const key = img.number;
+
+    if (!uniqueImages.has(key)) {
+      // Primera vez que vemos esta imagen
+      uniqueImages.set(key, img);
+      imagesToKeep.push(img);
+    } else {
+      // Ya vimos esta imagen antes
+      const firstOccurrence = uniqueImages.get(key);
+
+      // Calcular la distancia entre la primera y esta ocurrencia
+      const distance = img.start - firstOccurrence.start;
+
+      // Si están muy separadas (>200 caracteres), probablemente sea un duplicado del thread
+      // En lugar de procesar este duplicado, lo marcaremos para eliminación
+      if (distance > 200) {
+        console.log(`⚠️ Detectado duplicado de Imagen ${key} a ${distance} chars de distancia - será eliminado`);
+        // No agregamos a imagesToKeep
+      } else {
+        // Están muy cerca, probablemente sea legítimo
+        imagesToKeep.push(img);
+      }
+    }
+  }
+
+  // Usar solo las imágenes no duplicadas
+  const finalImageMatches = imagesToKeep;
+
+  console.log(`Total imágenes encontradas: ${imageMatches.length}, después de deduplicar: ${finalImageMatches.length}`);
+
+  if (finalImageMatches.length === 0) {
+    // No hay descripciones VL, buscar placeholders simples
+    return processedText.replace(/<Imagen\s+(\d+)>/gi, (match, imageNumber) => {
+      const placeholder = `<Imagen ${imageNumber}>`;
+
+      if (imagesMapping && imagesMapping[placeholder]) {
+        const filename = imagesMapping[placeholder];
+        const imageUrl = `${API_BASE_URL}/images/${encodeURIComponent(filename)}`;
+
+        return `
+          <div class="email-image-container">
+            <img src="${imageUrl}" alt="Imagen ${imageNumber}" class="email-embedded-image" />
+          </div>
+        `;
+      }
+
+      return `
+        <div class="email-image-placeholder">
+          <div class="image-icon">🖼️</div>
+          <div class="image-label">
+            <strong>Imagen ${imageNumber}</strong>
+            <small>(La imagen original está disponible en el hilo del correo)</small>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  // Procesar de atrás hacia adelante para no afectar índices
+  for (let i = finalImageMatches.length - 1; i >= 0; i--) {
+    const current = finalImageMatches[i];
+    const imageNumber = current.number;
     const placeholder = `<Imagen ${imageNumber}>`;
-    const alt = description || `Imagen ${imageNumber}`;
 
-    console.log(`Encontrado placeholder: ${placeholder}`);
-    console.log(`Buscando en mapping:`, imagesMapping?.[placeholder]);
+    // Encontrar el final de la descripción
+    let endIndex;
 
-    // Si tenemos el mapping y existe el filename para este placeholder
+    // Buscar el siguiente <Imagen N>: o marcadores de fin
+    const nextImageIndex = i < finalImageMatches.length - 1 ? finalImageMatches[i + 1].start : -1;
+
+    // Marcadores que indican fin de descripción
+    const endMarkers = [
+      /\n\n\*Saludos/,
+      /\n\nSaludos cordiales/,
+      /\n\nAtentamente/,
+      /\n\nCordialmente/,
+      /\nAntes de imprimir/,
+      /\n\n--\n/,
+      /\nEl \w+,.*?escribió:/,
+      /\n-{5,}\s*Forwarded message/
+    ];
+
+    const afterStart = text.substring(current.start + current.fullMatch.length);
+    let minEndIndex = afterStart.length;
+
+    // Buscar el marcador más cercano
+    for (const marker of endMarkers) {
+      const markerMatch = afterStart.match(marker);
+      if (markerMatch && markerMatch.index < minEndIndex) {
+        minEndIndex = markerMatch.index;
+      }
+    }
+
+    // Si hay otra imagen después, usar eso como límite
+    if (nextImageIndex > 0) {
+      const distanceToNext = nextImageIndex - (current.start + current.fullMatch.length);
+      if (distanceToNext < minEndIndex) {
+        minEndIndex = distanceToNext;
+      }
+    }
+
+    // Extraer la descripción
+    const description = afterStart.substring(0, minEndIndex).trim();
+
+    // Generar ID único
+    uniqueCounter++;
+    const toggleId = `img-desc-${imageNumber}-${uniqueCounter}`;
+
+    // Construir HTML de reemplazo
+    let replacement;
+
     if (imagesMapping && imagesMapping[placeholder]) {
       const filename = imagesMapping[placeholder];
       const imageUrl = `${API_BASE_URL}/images/${encodeURIComponent(filename)}`;
 
-      console.log(`✅ Renderizando imagen: ${filename}`);
-
-      return `
+      replacement = `
         <div class="email-image-container">
-          <img src="${imageUrl}" alt="${alt}" class="email-embedded-image" />
-          ${description ? `<div class="image-caption">${description}</div>` : ''}
+          <img src="${imageUrl}" alt="Imagen ${imageNumber}" class="email-embedded-image" />
+          <div class="image-description-wrapper">
+            <button
+              class="toggle-description-btn"
+              data-target="${toggleId}"
+            >
+              <span class="toggle-icon">▼</span> Ver descripción de la imagen
+            </button>
+            <div id="${toggleId}" class="image-description-collapsible">
+              ${description}
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      replacement = `
+        <div class="email-image-placeholder">
+          <div class="image-icon">🖼️</div>
+          <div class="image-label">
+            <strong>Imagen ${imageNumber}</strong>
+            <small>(La imagen original está disponible en el hilo del correo)</small>
+          </div>
+          <div class="image-description-wrapper">
+            <button
+              class="toggle-description-btn"
+              data-target="${toggleId}"
+            >
+              <span class="toggle-icon">▼</span> Ver descripción
+            </button>
+            <div id="${toggleId}" class="image-description-collapsible">
+              ${description}
+            </div>
+          </div>
         </div>
       `;
     }
 
-    console.log(`❌ Sin mapping para ${placeholder} - mostrando placeholder`);
+    // Reemplazar desde el inicio del <Imagen N>: hasta el final de la descripción
+    const startPos = current.start;
+    const endPos = current.start + current.fullMatch.length + minEndIndex;
 
-    // Fallback: Mostrar placeholder visual si no hay mapping
-    return `
-      <div class="email-image-placeholder">
-        <div class="image-icon">🖼️</div>
-        <div class="image-label">
-          <strong>Imagen ${imageNumber}</strong>
-          ${description ? `<br/><span class="image-description">${description}</span>` : ''}
-        </div>
-        <div class="image-note">
-          <small>(La imagen original está disponible en el hilo del correo)</small>
-        </div>
-      </div>
-    `;
-  });
+    processedText = processedText.substring(0, startPos) + replacement + processedText.substring(endPos);
+  }
+
+  return processedText;
 }
 
 /**
@@ -363,8 +511,8 @@ export function sanitizeEmailContent(content) {
   let sanitized = content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
 
   // Escapar otros tags HTML potencialmente peligrosos
-  // (excepto los que nosotros creamos: div, span, a, strong, br, img, small)
-  sanitized = sanitized.replace(/<(?!\/?(div|span|a|strong|br|img|small)\b)[^>]+>/gi, '');
+  // (excepto los que nosotros creamos: div, span, a, strong, br, img, small, button)
+  sanitized = sanitized.replace(/<(?!\/?(div|span|a|strong|br|img|small|button)\b)[^>]+>/gi, '');
 
   return sanitized;
 }
