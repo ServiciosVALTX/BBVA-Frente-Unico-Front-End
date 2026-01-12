@@ -93,7 +93,7 @@ const handleSendMessage = async (messageText = null) => {
 
     setMessages(prev => {
       placeholderIndexRef.current = prev.length;
-      return [...prev, { text: '', sender: 'bot' }];
+      return [...prev, { text: '', sender: 'bot', diagrams: [] }];
     });
 
     try {
@@ -138,7 +138,15 @@ const handleSendMessage = async (messageText = null) => {
               } else if (tokenObj.process_diagrams) {
                 // Diagramas de procesos detectados por keywords
                 console.log('Received process_diagrams:', tokenObj.process_diagrams);
-                setProcessDiagrams(tokenObj.process_diagrams);
+
+                // Agregar diagramas al mensaje actual en lugar de estado separado
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  if (newMessages[placeholderIndexRef.current]) {
+                    newMessages[placeholderIndexRef.current].diagrams = tokenObj.process_diagrams;
+                  }
+                  return newMessages;
+                });
               } else {
                 // Si no es un paso, se trata como token de mensaje normal
                 const token = tokenObj.token || '';
@@ -317,61 +325,75 @@ const handleSendMessage = async (messageText = null) => {
     ); 
   } 
 
-  // Balanceo automático de diagramas entre paneles (Opción A)
-  const getBalancedDiagrams = () => {
-    const total = processDiagrams.length;
-    const half = Math.ceil(total / 2);
-
-    return {
-      left: processDiagrams.slice(0, half),
-      right: processDiagrams.slice(half)
-    };
-  };
-
-  const { left: leftDiagrams, right: rightDiagrams } = getBalancedDiagrams();
+  // [DEPRECATED] Balanceo de diagramas - Ya no se usan paneles laterales
+  // Los diagramas ahora se muestran dentro del mensaje
+  // const getBalancedDiagrams = () => {
+  //   const total = processDiagrams.length;
+  //   const half = Math.ceil(total / 2);
+  //   return {
+  //     left: processDiagrams.slice(0, half),
+  //     right: processDiagrams.slice(half)
+  //   };
+  // };
+  // const { left: leftDiagrams, right: rightDiagrams } = getBalancedDiagrams();
 
   return (
     <div className="page-container">
-      {/* Panel izquierdo: Diagramas de procesos */}
-      {leftDiagrams.length > 0 && (
+      {/* [DEPRECATED] Panel izquierdo de diagramas - Ahora se muestran dentro del mensaje */}
+      {/* {leftDiagrams.length > 0 && (
         <div className="process-diagrams-panel left">
-          <div className="panel-header">Diagramas Relacionados</div>
-          <div className="diagrams-container">
-            {leftDiagrams.map((diagram, index) => (
-              <div key={index} className="diagram-card" onClick={() => setPreviewImage(`${API_BASE_URL}/images/procesos/${diagram.image}`)}>
-                <img
-                  src={`${API_BASE_URL}/images/procesos/${diagram.image}`}
-                  alt={diagram.description}
-                  className="diagram-thumbnail"
-                />
-                <div className="diagram-info">
-                  <div className="diagram-description">{diagram.description}</div>
-                  <div className="diagram-keywords">
-                    {diagram.matched_keywords.slice(0, 3).map((kw, i) => (
-                      <span key={i} className="keyword-badge">{kw}</span>
-                    ))}
-                    {diagram.matched_keywords.length > 3 && (
-                      <span className="keyword-badge more">+{diagram.matched_keywords.length - 3}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          ...
         </div>
-      )}
+      )} */}
 
       <div className="chatbot"> 
         <div className="chatbot-messages"> 
-          {messages.map((msg, i) => ( 
-            <div key={i} className={`message ${msg.sender}`}> 
+          {messages.map((msg, i) => (
+            <div key={i} className={`message ${msg.sender}`}>
               {msg.sender === 'bot' && <img src={logo} alt="Chatbot icon" />}
-              <div
-                className="message-text"
-                dangerouslySetInnerHTML={{
-                  __html: msg.sender === 'bot' ? marked.parse(msg.text) : msg.text,
-                }}
-              />
+              <div className="message-content">
+                <div
+                  className="message-text"
+                  dangerouslySetInnerHTML={{
+                    __html: msg.sender === 'bot' ? marked.parse(msg.text) : msg.text,
+                  }}
+                />
+
+                {/* Mostrar diagramas de procesos como anexos dentro del mensaje */}
+                {msg.diagrams && msg.diagrams.length > 0 && (
+                  <div className="message-diagrams">
+                    <div className="diagrams-header">📊 Diagramas relacionados:</div>
+                    <div className="diagrams-grid">
+                      {msg.diagrams.map((diagram, idx) => (
+                        <div
+                          key={idx}
+                          className="diagram-attachment"
+                          onClick={() => setPreviewImage(`${API_BASE_URL}/images/procesos/${diagram.image}`)}
+                        >
+                          <img
+                            src={`${API_BASE_URL}/images/procesos/${diagram.image}`}
+                            alt={diagram.description}
+                            className="diagram-thumbnail"
+                          />
+                          <div className="diagram-caption">
+                            <div className="diagram-description">{diagram.description}</div>
+                            {diagram.matched_keywords && diagram.matched_keywords.length > 0 && (
+                              <div className="diagram-keywords">
+                                {diagram.matched_keywords.slice(0, 3).map((kw, kwIdx) => (
+                                  <span key={kwIdx} className="keyword-badge">{kw}</span>
+                                ))}
+                                {diagram.matched_keywords.length > 3 && (
+                                  <span className="keyword-badge more">+{diagram.matched_keywords.length - 3}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
 
@@ -498,34 +520,12 @@ const handleSendMessage = async (messageText = null) => {
         </div>
       )}
 
-      {/* Panel derecho: Diagramas de procesos */}
-      {rightDiagrams.length > 0 && (
+      {/* [DEPRECATED] Panel derecho de diagramas - Ahora se muestran dentro del mensaje */}
+      {/* {rightDiagrams.length > 0 && (
         <div className="process-diagrams-panel right">
-          <div className="panel-header">Diagramas Relacionados</div>
-          <div className="diagrams-container">
-            {rightDiagrams.map((diagram, index) => (
-              <div key={index} className="diagram-card" onClick={() => setPreviewImage(`${API_BASE_URL}/images/procesos/${diagram.image}`)}>
-                <img
-                  src={`${API_BASE_URL}/images/procesos/${diagram.image}`}
-                  alt={diagram.description}
-                  className="diagram-thumbnail"
-                />
-                <div className="diagram-info">
-                  <div className="diagram-description">{diagram.description}</div>
-                  <div className="diagram-keywords">
-                    {diagram.matched_keywords.slice(0, 3).map((kw, i) => (
-                      <span key={i} className="keyword-badge">{kw}</span>
-                    ))}
-                    {diagram.matched_keywords.length > 3 && (
-                      <span className="keyword-badge more">+{diagram.matched_keywords.length - 3}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          ...
         </div>
-      )}
+      )} */}
     </div>
   );
 };
